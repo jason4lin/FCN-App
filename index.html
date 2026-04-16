@@ -43,8 +43,6 @@
         <button id="refresh-btn" class="btn btn-ghost">
           <span id="refresh-icon">↻</span> Update All
         </button>
-        <button id="export-btn" class="btn btn-ghost" title="匯出所有合約為 CSV 備份">↓ 匯出</button>
-        <button id="import-btn" class="btn btn-ghost" title="從 CSV 檔案匯入合約">↑ 匯入</button>
         <button id="settings-btn" class="btn btn-ghost btn-icon" title="設定">⚙</button>
         <button id="add-btn" class="btn btn-primary">＋ 新增 FCN 合約</button>
       </div>
@@ -335,6 +333,63 @@
       </div>
     </div>
 
+    <div class="settings-section">
+      <div class="settings-section-title">合約判斷規則</div>
+      <label class="settings-toggle-row">
+        <input type="checkbox" id="memory-ko-toggle" class="settings-checkbox">
+        <div class="settings-toggle-info">
+          <span class="settings-toggle-label">記憶式 FCN</span>
+          <span class="settings-toggle-desc">各標的獨立記憶，全部達標後才提前終止（需 Update All 重新計算）</span>
+        </div>
+      </label>
+    </div>
+
+    <div class="settings-section">
+      <div class="settings-section-title">資料備份</div>
+      <div class="settings-backup-desc">
+        匯出格式為 <strong>CSV（逗號分隔）</strong>，UTF-8 with BOM，可直接用 Excel 開啟。<br>
+        每筆合約的每個標的佔一列，欄位包含：<br>
+        <span class="settings-backup-fields">合約ID・合約名稱・開始日期・時長(月)・不比價(月)・結算頻率(月)・市場・KO%・Strike%・KI%・投入本金・年化票息率%・已贖回日期・標的代號・標的名稱・基準價・貨幣・接盤標的・接盤日期・接盤股數・實際接盤價</span><br>
+        <span class="settings-backup-warn">⚠ 匯入時將完全取代現有所有合約。</span>
+      </div>
+      <div class="settings-backup-actions">
+        <button id="export-btn" class="btn btn-ghost btn-sm">↓ 匯出備份</button>
+        <button id="import-btn" class="btn btn-ghost btn-sm">↑ 匯入備份</button>
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <div class="settings-section-title">問題回報</div>
+      <div class="settings-report-desc">
+        遇到問題或資料顯示異常時，點擊「回報問題」匯出診斷檔案，再至下方網址建立 Issue 並附上檔案：<br>
+        <span class="settings-report-url">https://github.com/jason4lin/FCN-App/issues/new</span>
+      </div>
+      <div class="settings-backup-actions">
+        <button id="report-btn" class="btn btn-ghost btn-sm">🐛 回報問題</button>
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <div class="settings-section-title">關於</div>
+      <div class="settings-update-row">
+        <span class="settings-version-label">FCN Tracker v<span id="app-version">--</span></span>
+        <button id="check-update-btn" class="btn btn-ghost btn-sm">🔍 檢查更新</button>
+      </div>
+      <div id="update-status" class="settings-update-status hidden"></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══ Crash Toast ══════════════════════════════════════════════════════════ -->
+<div id="crash-toast" class="crash-toast hidden">
+  <div class="crash-toast-body">
+    <span class="crash-toast-icon">⚠</span>
+    <span id="crash-toast-msg" class="crash-toast-msg">發生未預期的錯誤</span>
+  </div>
+  <div class="crash-toast-actions">
+    <button id="crash-report-btn" class="btn btn-ghost btn-sm">回報問題</button>
+    <button id="crash-dismiss-btn" class="btn btn-ghost btn-sm">忽略</button>
   </div>
 </div>
 

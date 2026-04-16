@@ -48,7 +48,8 @@ export function buildContractCard(c) {
     const koPrice  = c.koPercent     ? u.basePrice * c.koPercent     / 100 : null;
     const kiPrice  = c.kiPercent     ? u.basePrice * c.kiPercent     / 100 : null;
     const stPrice  = c.strikePercent ? u.basePrice * c.strikePercent / 100 : null;
-    const alertType = rowAlerts[u.symbol];
+    const alertType  = rowAlerts[u.symbol];
+    const memoryDate = state.settings?.memoryKO ? state.koMemory?.[c.id]?.[u.symbol] : null;
 
     let priceCell = '<span class="td-muted">—</span>';
     let chgCell = '', vsCell = '', alertCell = '<span class="td-muted">—</span>';
@@ -68,11 +69,12 @@ export function buildContractCard(c) {
         const vb  = (p - u.basePrice) / u.basePrice * 100;
         vsCell = `<span class="vs-base ${vb >= 0 ? 'positive' : 'negative'}">${vb >= 0 ? '+' : ''}${vb.toFixed(2)}%</span>`;
       }
+      const memoryTag = memoryDate ? `<div class="memory-ko-tag">🔔 KO 已記憶 ${memoryDate}</div>` : '';
       alertCell = alertType === 'ki'
-        ? `<span class="alert-ki">⚠️ EKI 觸及 (${fmt(kiPrice)})</span>`
+        ? `<span class="alert-ki">⚠️ EKI 觸及 (${fmt(kiPrice)})</span>${memoryTag}`
         : alertType === 'ko_ready'
-        ? `<span class="alert-ko-ready">✅ KO 達標</span>`
-        : `<span class="alert-ok">✓ 正常</span>`;
+        ? `<span class="alert-ko-ready">✅ KO 達標</span>${memoryTag}`
+        : `<span class="alert-ok">✓ 正常</span>${memoryTag}`;
     }
 
     const thStr = [
@@ -252,7 +254,7 @@ function buildAutoNotice(c) {
       ? Number(notice.shares).toLocaleString('zh-TW', { minimumFractionDigits: 2 })
       : '--';
     cls = 'auto-notice-ki';
-    html = `⚠️ 系統自動判定：EKI 觸及 → 立即接盤 <strong>${escHtml(stripSuffix(notice.symbol))}</strong>，Strike 價 <strong>${fmt(notice.strikePrice)}</strong>，接 <strong>${shares}</strong> 股（${notice.date}）。如判定有誤請點 ✏️ 編輯修正。`;
+    html = `⚠️ 系統自動判定：到期日 EKI 接盤 <strong>${escHtml(stripSuffix(notice.symbol))}</strong>，Strike 價 <strong>${fmt(notice.strikePrice)}</strong>，接 <strong>${shares}</strong> 股（${notice.date}）。如判定有誤請點 ✏️ 編輯修正。`;
   } else {
     cls = 'auto-notice-natural';
     html = `✓ 系統自動判定：合約於 <strong>${notice.date}</strong> 自然到期結算。如判定有誤請點 ✏️ 編輯修正。`;
@@ -288,15 +290,29 @@ export function buildHistCardBanner(c) {
     // 合約提早結束後的日期：不會結算，略過
     if (d > effectiveEnd) {
       if (d > today) return; // 純未來日期不顯示
-      pastDatesToRender.push(`<li class="hist-cancelled-row">${d}：<span class="hist-cancelled">已取消（合約提早終止）</span></li>`);
+
+      // 組合取消原因文字
+      let cancelledMsg = '已取消（合約提早終止）';
+      if (c.redeemedDate && c.redeemedDate < (contractEndIso(c) || '')) {
+        // KO 提前贖回：計算上次觀察日到 KO 日的部分利息
+        const prevObs = [...observationDates].filter(od => od <= c.redeemedDate).pop();
+        if (prevObs && c.principal && c.couponPercent && prevObs !== c.redeemedDate) {
+          const days = Math.round(
+            (new Date(c.redeemedDate + 'T00:00:00') - new Date(prevObs + 'T00:00:00')) / 86400000
+          );
+          const partial = c.principal * (c.couponPercent / 100) * days / 365;
+          const cur = c.underlyings?.[0]?.currency || '';
+          cancelledMsg = `KO 提前贖回（${c.redeemedDate}），額外 ${days} 天利息 ${fmtMoney(Math.round(partial * 100) / 100, cur)}`;
+        } else {
+          cancelledMsg = `KO 提前贖回（${c.redeemedDate}）後取消`;
+        }
+      }
+      pastDatesToRender.push(`<li class="hist-cancelled-row">${d}：<span class="hist-cancelled">${cancelledMsg}</span></li>`);
       return;
     }
 
-    // 尚未到的未來日期（合約仍進行中）
-    if (d > today) {
-      pastDatesToRender.push(`<li>${d}：<span class="hist-pending">等待結算...</span></li>`);
-      return;
-    }
+    // 尚未到的未來日期 → 不顯示（「下次觀察」chip 已提示）
+    if (d > today) return;
 
     // 過去日期：優先使用 histCache 資料
     const key = `${c.id}__${d}`;

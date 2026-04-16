@@ -1,11 +1,13 @@
 import { state } from './state.js';
-import { loadContracts, saveContracts, refreshAll } from './api.js';
+import { loadContracts, saveContracts, refreshAll, loadSettings } from './api.js';
 import { renderDashboard } from './ui/dashboard.js';
 import { localDateStr, contractsToCSV, csvToContracts } from './utils.js';
 import { initTheme, applyTheme } from './theme.js';
+import { initErrorLogger } from './errorLogger.js';
 
 // 主題在 DOM 載入前就要設定，避免閃白
 initTheme();
+initErrorLogger();
 import {
   hideAllModals, showModal,
   openAddModal, openEditModal, openAssignmentModal,
@@ -187,8 +189,74 @@ window.addEventListener('DOMContentLoaded', async () => {
     });
   });
 
+  // 顯示 app 版本
+  window.api.getAppVersion().then(v => {
+    const el = document.getElementById('app-version');
+    if (el) el.textContent = v;
+  });
+
+  // 手動檢查更新
+  document.getElementById('check-update-btn')?.addEventListener('click', async () => {
+    const btn    = document.getElementById('check-update-btn');
+    const status = document.getElementById('update-status');
+    btn.disabled = true;
+    btn.textContent = '檢查中…';
+    status.className = 'settings-update-status';
+    status.textContent = '';
+
+    const result = await window.api.checkForUpdate();
+    btn.disabled = false;
+    btn.textContent = '🔍 檢查更新';
+
+    const map = {
+      dev:       ['開發模式，無法檢查更新',              'status-muted'],
+      latest:    ['✓ 目前已是最新版本',                  'status-ok'],
+      available: [`🔔 發現新版本 v${result.version}，下載中…`, 'status-update'],
+      error:     [`⚠ 檢查失敗：${result.message || '網路錯誤'}`, 'status-warn'],
+    };
+    const [text, cls] = map[result.status] || map.error;
+    status.textContent = text;
+    status.className = `settings-update-status ${cls}`;
+  });
+
+  // Memory KO 設定 checkbox
+  document.getElementById('memory-ko-toggle')?.addEventListener('change', async (e) => {
+    state.settings.memoryKO = e.target.checked;
+    if (!e.target.checked) state.koMemory = {};
+    await window.api.saveSettings(state.settings);
+  });
+
+  // 問題回報
+  async function submitReport() {
+    const version = document.getElementById('app-version')?.textContent || '--';
+    const diagData = {
+      appVersion: version,
+      platform: navigator.platform,
+      userAgent: navigator.userAgent,
+      reportedAt: new Date().toISOString(),
+      contractCount: state.contracts.length,
+      contracts: state.contracts,
+      settings: state.settings,
+      recentErrors: state.errorLog,
+    };
+    const result = await window.api.exportDiagnostic(diagData);
+    if (!result?.ok) return;
+
+    alert(`診斷檔案已儲存至：\n${result.filePath}\n\n如需回報問題，請至以下網址建立 Issue，並附上此檔案：\nhttps://github.com/jason4lin/FCN-App/issues/new`);
+  }
+
+  document.getElementById('report-btn')?.addEventListener('click', submitReport);
+  document.getElementById('crash-report-btn')?.addEventListener('click', () => {
+    document.getElementById('crash-toast').classList.add('hidden');
+    submitReport();
+  });
+  document.getElementById('crash-dismiss-btn')?.addEventListener('click', () => {
+    document.getElementById('crash-toast').classList.add('hidden');
+  });
+
   // Initial Load
   await loadContracts();
+  await loadSettings();
   renderDashboard();
   if (state.contracts.length > 0) await refreshAll();
 });

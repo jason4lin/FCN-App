@@ -77,6 +77,21 @@ function initAutoUpdater(win) {
   autoUpdater.checkForUpdatesAndNotify().catch(() => {}); // 離線時靜默失敗
 }
 
+// ─── IPC：版本資訊 & 手動檢查更新 ─────────────────────────────────────────────
+ipcMain.handle('get-app-version', () => app.getVersion());
+
+ipcMain.handle('check-for-update', () => {
+  if (!app.isPackaged) return Promise.resolve({ status: 'dev' });
+  return new Promise((resolve) => {
+    const done = (result) => { clearTimeout(timer); resolve(result); };
+    const timer = setTimeout(() => done({ status: 'error', message: '連線逾時' }), 15000);
+    autoUpdater.once('update-available',     (info) => done({ status: 'available', version: info.version }));
+    autoUpdater.once('update-not-available', ()     => done({ status: 'latest' }));
+    autoUpdater.once('error',                (err)  => done({ status: 'error', message: err.message }));
+    autoUpdater.checkForUpdates().catch(err  =>       done({ status: 'error', message: err.message }));
+  });
+});
+
 // ─── App 生命週期 ─────────────────────────────────────────────────────────────
 app.whenReady().then(() => {
   const win = createWindow();
@@ -206,6 +221,66 @@ ipcMain.handle('import-csv', async () => {
   try {
     const content = fs.readFileSync(filePaths[0], 'utf8').replace(/^\uFEFF/, ''); // strip BOM
     return { ok: true, content };
+  } catch (err) {
+    return { ok: false, message: err.message };
+  }
+});
+
+// ─── IPC：設定檔 ─────────────────────────────────────────────────────────────
+let settingsFilePath;
+function getSettingsFilePath() {
+  if (!settingsFilePath) {
+    settingsFilePath = path.join(app.getPath('userData'), 'settings.json');
+  }
+  return settingsFilePath;
+}
+
+ipcMain.handle('get-settings', () => {
+  const p = getSettingsFilePath();
+  if (!fs.existsSync(p)) return {};
+  try { return JSON.parse(fs.readFileSync(p, 'utf8')); } catch { return {}; }
+});
+
+ipcMain.handle('save-settings', (_event, settings) => {
+  try {
+    fs.writeFileSync(getSettingsFilePath(), JSON.stringify(settings, null, 2), 'utf8');
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, message: err.message };
+  }
+});
+
+// ─── IPC：查詢標的每日收盤（記憶式 KO 用）──────────────────────────────────────
+ipcMain.handle('fetch-price-range', async (_event, { symbol, startDate, endDate }) => {
+  const yf = getYF();
+  try {
+    const chart = await yf.chart(symbol, { period1: startDate, period2: endDate, interval: '1d' });
+    const quotes = (chart.quotes || [])
+      .filter(q => q.close != null)
+      .map(q => ({ date: new Date(q.date).toISOString().slice(0, 10), price: q.close }));
+    return { ok: true, quotes };
+  } catch (e) {
+    return { ok: false, message: e.message };
+  }
+});
+
+// ─── IPC：開啟外部連結（mailto: 等）──────────────────────────────────────────────
+ipcMain.handle('open-external', (_event, url) => {
+  shell.openExternal(url);
+});
+
+// ─── IPC：匯出診斷 JSON ────────────────────────────────────────────────────────
+ipcMain.handle('export-diagnostic', async (_event, data) => {
+  const date = new Date().toISOString().slice(0, 10);
+  const { canceled, filePath } = await dialog.showSaveDialog({
+    title: '匯出診斷資料',
+    defaultPath: `fcn-diagnostic-${date}.json`,
+    filters: [{ name: 'JSON 檔案', extensions: ['json'] }],
+  });
+  if (canceled || !filePath) return { ok: false };
+  try {
+    fs.writeFileSync(filePath, JSON.stringify(data, null, 2), 'utf8');
+    return { ok: true, filePath };
   } catch (err) {
     return { ok: false, message: err.message };
   }

@@ -11,6 +11,15 @@ export const state = {
   // 自動判定後的通知（key=合約id，value={ type, date, ... }）
   autoProcessedNotices: {},
 
+  // 設定
+  settings: { memoryKO: true },
+
+  // 記憶式 KO 快取：{ [contractId]: { [symbol]: '首次達標日 YYYY-MM-DD' } }
+  koMemory: {},
+
+  // 錯誤記錄（最多 20 筆，供問題回報用）
+  errorLog: [],
+
   // UI State
   editingId: null,
   deletingId: null,
