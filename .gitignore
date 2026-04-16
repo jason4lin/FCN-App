@@ -11,6 +11,8 @@ FCN2026.ods
 # Local dev / IDE config
 .claude/
 *.local.json
+CLAUDE.md
+DESIGN.md
 
 # OS
 .DS_Store

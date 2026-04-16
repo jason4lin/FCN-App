@@ -1,6 +1,7 @@
 const { app, BrowserWindow, ipcMain, shell, dialog } = require('electron');
 const path = require('path');
 const fs   = require('fs');
+const { autoUpdater } = require('electron-updater');
 
 // ─── Yahoo Finance 全域實例（懶初始化）────────────────────────────────────────
 // v3 必須用 new YahooFinance()，而不是直接用 .default
@@ -48,11 +49,38 @@ function createWindow() {
     shell.openExternal(url);
     return { action: 'deny' };
   });
+
+  return win;
+}
+
+// ─── 自動更新 ─────────────────────────────────────────────────────────────────
+function initAutoUpdater(win) {
+  autoUpdater.autoDownload = true;
+  autoUpdater.autoInstallOnAppQuit = true;
+
+  autoUpdater.on('update-available', (info) => {
+    win.webContents.send('update-available', info.version);
+  });
+
+  autoUpdater.on('update-downloaded', () => {
+    dialog.showMessageBox(win, {
+      type: 'info',
+      title: '更新就緒',
+      message: `新版本已下載完畢，重新啟動後將自動安裝。`,
+      buttons: ['立即重啟', '稍後再說'],
+      defaultId: 0,
+    }).then(({ response }) => {
+      if (response === 0) autoUpdater.quitAndInstall();
+    });
+  });
+
+  autoUpdater.checkForUpdatesAndNotify().catch(() => {}); // 離線時靜默失敗
 }
 
 // ─── App 生命週期 ─────────────────────────────────────────────────────────────
 app.whenReady().then(() => {
-  createWindow();
+  const win = createWindow();
+  if (app.isPackaged) initAutoUpdater(win);
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
   });
