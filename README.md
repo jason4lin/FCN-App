@@ -7,7 +7,7 @@ FCN（Fixed Coupon Note，固定票息商品）桌面追蹤工具，即時監控
 - 管理多份 FCN 合約，支援美股、台股（上市/上櫃）
 - 即時報價與 KO／EKI 狀態監控
 - 歷史觀察日回查，逐日確認 KO 與 EKI 是否觸發
-- 記憶式 FCN：各標的獨立記憶，全部達到 KO 門檻後才提前終止
+- 記憶式 FCN：各標的獨立記憶，全部達到 KO 門檻後才提前終止(詳細見中信描述：https://www.ctbcsec.com/OffShoreStructured/FCN)
 - 到期結算：自動判斷 Situation A／B／C（EKI 旗標 + 到期日收盤價）
 - 合約資料 CSV 匯出／匯入備份
 - 深色／淺色主題，自動更新
