@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy"
+    content="default-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://fonts.gstatic.com;
+             script-src 'self' 'unsafe-inline'; connect-src 'self' https:">
+  <title>FCN 報價追蹤器</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="app-shell">
+
+  <!-- ══ Sidebar ══ -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <span class="logo-icon">📈</span>
+      <span class="logo-text">FCN 追蹤</span>
+    </div>
+    <nav class="sidebar-nav">
+      <a href="#" class="nav-item active" data-view="all"><span class="nav-icon">⊞</span> 合約總覽 <span class="nav-badge" id="badge-all"></span></a>
+      <a href="#" class="nav-item" data-view="active"><span class="nav-icon">▶</span> 進行中 <span class="nav-badge nav-badge-green" id="badge-active"></span></a>
+      <a href="#" class="nav-item" data-view="ended"><span class="nav-icon">✓</span> 已結束 <span class="nav-badge nav-badge-muted" id="badge-ended"></span></a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="pending-update hidden" id="pending-update"></div>
+      <div class="last-update" id="last-update">尚未更新</div>
+    </div>
+  </aside>
+
+  <!-- ══ Main ══ -->
+  <div class="main-content">
+    <div class="topbar">
+      <div class="topbar-left">
+        <h1>FCN 合約總覽</h1>
+        <span class="badge" id="target-count">0 份合約</span>
+      </div>
+      <div class="topbar-right">
+        <button id="refresh-btn" class="btn btn-ghost">
+          <span id="refresh-icon">↻</span> Update All
+        </button>
+        <button id="export-btn" class="btn btn-ghost" title="匯出所有合約為 CSV 備份">↓ 匯出</button>
+        <button id="import-btn" class="btn btn-ghost" title="從 CSV 檔案匯入合約">↑ 匯入</button>
+        <button id="settings-btn" class="btn btn-ghost btn-icon" title="設定">⚙</button>
+        <button id="add-btn" class="btn btn-primary">＋ 新增 FCN 合約</button>
+      </div>
+    </div>
+
+    <div id="status-bar" class="status-bar hidden">
+      <div class="status-spinner"></div>
+      <span id="status-text">正在查詢報價…</span>
+    </div>
+
+    <div id="sort-bar" class="sort-bar">
+      <span class="sort-label">排序</span>
+      <button class="sort-btn active" data-sort="urgency">⚡ 緊急優先</button>
+      <button class="sort-btn" data-sort="next_obs">📅 下次結算</button>
+      <button class="sort-btn" data-sort="date">🕐 成立日期</button>
+    </div>
+
+    <div id="filter-bar" class="filter-bar hidden">
+      <span class="filter-label">📅 篩選合約期間</span>
+      <input type="date" id="filter-from" class="field-input filter-date" placeholder="開始日期">
+      <span class="filter-sep">—</span>
+      <input type="date" id="filter-to" class="field-input filter-date" placeholder="結束日期">
+      <button id="filter-apply" class="btn btn-ghost btn-sm">套用</button>
+      <button id="filter-clear" class="btn btn-ghost btn-sm">清除</button>
+    </div>
+
+    <div id="stats-panel"></div>
+
+    <div id="cards-container" class="cards-grid"></div>
+
+    <div id="empty-state" class="empty-state hidden">
+      <div class="empty-icon">📋</div>
+      <h2>尚未建立任何 FCN 合約</h2>
+      <p>點擊右上角「新增 FCN 合約」，輸入您的標的菜單與合約條件</p>
+      <button class="btn btn-primary" id="empty-add-btn">＋ 新增第一份合約</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ FCN 合約 Modal ══════════════════════════════════════════════════════ -->
+<div id="modal" class="modal-overlay hidden" role="dialog" aria-modal="true">
+  <div class="modal-box modal-lg">
+    <div class="modal-header">
+      <h2 id="modal-title">新建 FCN 合約</h2>
+      <button class="modal-close" id="modal-close">✕</button>
+    </div>
+
+    <form id="contract-form" novalidate>
+
+      <!-- ─ 合約基本資訊 ─────────────────────────────────────────────── -->
+      <div class="form-section">
+        <div class="form-section-title">📋 合約基本資訊</div>
+
+        <div class="field">
+          <label class="field-label" for="f-name">
+            合約備註名稱 <span class="field-optional">(可選)</span>
+          </label>
+          <input type="text" id="f-name" class="field-input"
+            placeholder="例：2026 Q1 NVDA / 2330 菜單">
+        </div>
+
+        <div class="field-row-2" style="margin-bottom:1rem">
+          <div class="field" style="margin-bottom:0">
+            <label class="field-label" for="f-principal">投入本金 <span class="field-optional">(可選)</span></label>
+            <input type="number" id="f-principal" class="field-input" step="1" min="0" placeholder="例：1000000">
+          </div>
+          <div class="field" style="margin-bottom:0">
+            <label class="field-label" for="f-coupon">年化票息率 % <span class="field-optional">(可選)</span></label>
+            <div class="pct-input-row">
+              <input type="number" id="f-coupon" class="field-input" step="0.1" min="0" placeholder="例：15">
+              <span class="pct-symbol">%</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="field-row-3">
+          <div class="field">
+            <label class="field-label" for="f-start">開始日期</label>
+            <input type="date" id="f-start" class="field-input" required>
+          </div>
+          <div class="field">
+            <label class="field-label" for="f-duration">合約時長（月）</label>
+            <input type="number" id="f-duration" class="field-input"
+              min="1" max="120" step="1" placeholder="12" required>
+          </div>
+          <div class="field">
+            <label class="field-label" for="f-noop">
+              不比價期間（月）<span class="field-optional">(0=無)</span>
+            </label>
+            <input type="number" id="f-noop" class="field-input"
+              min="0" max="60" step="1" value="0">
+          </div>
+        </div>
+
+        <!-- 結算頻率 -->
+        <div class="field">
+          <label class="field-label">結算頻率（每幾個月）</label>
+          <div class="multi-btn-row" id="settle-selector">
+            <button type="button" class="multi-btn active" data-settle="1">每月</button>
+            <button type="button" class="multi-btn" data-settle="2">每2月</button>
+            <button type="button" class="multi-btn" data-settle="3">每季</button>
+            <button type="button" class="multi-btn" data-settle="6">每半年</button>
+            <button type="button" class="multi-btn" data-settle="12">每年</button>
+            <button type="button" class="multi-btn" data-settle="custom">自訂…</button>
+          </div>
+          <div id="settle-custom-wrap" class="hidden" style="margin-top:0.6rem;display:flex;align-items:center;gap:0.5rem">
+            <span class="text-muted">每</span>
+            <input type="number" id="f-settle-custom" class="field-input"
+              style="max-width:90px" min="1" max="60" value="1">
+            <span class="text-muted">個月觀察一次</span>
+          </div>
+          <input type="hidden" id="f-settle-months" value="1">
+        </div>
+      </div>
+
+      <!-- ─ 市場 & 共用條件（一組菜單共用） ──────────────────────────── -->
+      <div class="form-section">
+        <div class="form-section-title">⚙️ 市場 & 价格條件（全部標的共用）</div>
+
+        <div class="field">
+          <label class="field-label">市場類型</label>
+          <div class="multi-btn-row" id="market-selector">
+            <button type="button" class="multi-btn active" data-mkt="US">🇺🇸 美股</button>
+            <button type="button" class="multi-btn" data-mkt="TW">🇹🇼 上市台股</button>
+            <button type="button" class="multi-btn" data-mkt="TWO">上櫃台股</button>
+          </div>
+          <input type="hidden" id="f-market" value="US">
+          <div class="field-desc">台股 / 美股混合請選「美股」，並在代號欄直接輸入 2330.TW</div>
+        </div>
+
+        <div class="pct-note">
+          以下三個價格均以「查詢時基準股價」的百分比輸入，適用此菜單所有標的：<br>
+          <span class="pct-ko-color">▲ KO（Knock-Out 提前贖回）</span>（所有標的均達才觸發）≥
+          <span class="pct-st-color">● Strike（履約價）</span>（到期 EKI 時接手的價格）≥
+          <span class="pct-ki-color">▼ EKI（European Knock-In 下限）</span>（任一觸及即鎖定）
+        </div>
+
+        <div class="pct-grid-shared">
+          <div class="pct-card pct-ko">
+            <div class="pct-label">KO %</div>
+            <div class="pct-sub">所有標的均 ≥ 此比例才觸發 Knock-Out 提前贖回</div>
+            <div class="pct-input-row">
+              <input type="number" id="f-ko-pct" class="pct-input"
+                step="0.1" min="0" placeholder="100">
+              <span class="pct-symbol">%</span>
+            </div>
+          </div>
+          <div class="pct-card pct-strike">
+            <div class="pct-label">Strike %</div>
+            <div class="pct-sub">到期時 EKI 已觸及，依此價格接手最差標的</div>
+            <div class="pct-input-row">
+              <input type="number" id="f-strike-pct" class="pct-input"
+                step="0.1" min="0" placeholder="85">
+              <span class="pct-symbol">%</span>
+            </div>
+          </div>
+          <div class="pct-card pct-ki">
+            <div class="pct-label">EKI %</div>
+            <div class="pct-sub">任一標的觸及即 European Knock-In，影響到期結算</div>
+            <div class="pct-input-row">
+              <input type="number" id="f-ki-pct" class="pct-input"
+                step="0.1" min="0" placeholder="65">
+              <span class="pct-symbol">%</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ─ 標的菜單 ────────────────────────────────────────────────── -->
+      <div class="form-section">
+        <div class="form-section-title">📊 標的菜單</div>
+
+        <div class="field">
+          <label class="field-label">標的數量</label>
+          <div class="multi-btn-row" id="count-selector">
+            <button type="button" class="multi-btn" data-count="1">1</button>
+            <button type="button" class="multi-btn active" data-count="2">2</button>
+            <button type="button" class="multi-btn" data-count="3">3</button>
+            <button type="button" class="multi-btn" data-count="4">4</button>
+            <button type="button" class="multi-btn" data-count="5">5</button>
+            <button type="button" class="multi-btn" data-count="custom">自訂…</button>
+          </div>
+          <div id="count-custom-wrap" class="hidden" style="margin-top:0.5rem">
+            <input type="number" id="f-custom-count" class="field-input"
+              style="max-width:100px" min="1" max="10" value="2">
+          </div>
+        </div>
+
+        <!-- 動態標的區塊由 renderer.js 填入 -->
+        <div id="underlyings-container"></div>
+      </div>
+
+      <div class="modal-actions">
+        <button type="button" class="btn btn-ghost" id="cancel-btn">取消</button>
+        <button type="submit" class="btn btn-primary" id="submit-btn">✓ 儲存合約</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ══ 刪除確認 Modal ══ -->
+<div id="delete-modal" class="modal-overlay hidden">
+  <div class="modal-box modal-box-sm">
+    <h2 style="margin-bottom:1rem">確認刪除</h2>
+    <p id="delete-msg" class="text-secondary"></p>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" id="delete-cancel">取消</button>
+      <button class="btn btn-danger" id="delete-confirm">確認刪除</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ 歷史觀察日確認 Modal ══ -->
+<div id="hist-modal" class="modal-overlay hidden" role="dialog" aria-modal="true">
+  <div class="modal-box modal-lg">
+    <div class="modal-header">
+      <h2>🔍 歷史觀察日確認</h2>
+      <button class="modal-close" id="hist-modal-close">✕</button>
+    </div>
+    <p id="hist-modal-desc" class="text-secondary" style="margin-bottom:1.25rem;font-size:.9rem"></p>
+    <div id="hist-dates-list"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" id="hist-close-btn">關閉</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══ 接盤記錄 Modal ══ -->
+<div id="assign-modal" class="modal-overlay hidden" role="dialog" aria-modal="true">
+  <div class="modal-box" style="max-width:480px">
+    <div class="modal-header">
+      <h2>📥 記錄接盤</h2>
+      <button class="modal-close" id="assign-modal-close">✕</button>
+    </div>
+    <form id="assign-form" novalidate>
+      <div class="field">
+        <label class="field-label">接盤標的</label>
+        <select id="a-symbol" class="field-input"></select>
+        <div class="field-hint" id="a-strike-ref"></div>
+      </div>
+      <div class="field-row-2">
+        <div class="field">
+          <label class="field-label">接盤日期</label>
+          <input type="date" id="a-date" class="field-input">
+        </div>
+        <div class="field">
+          <label class="field-label">接盤股數</label>
+          <input type="number" id="a-shares" class="field-input" step="1" min="1" placeholder="股數">
+        </div>
+      </div>
+      <div class="field">
+        <label class="field-label">實際接盤價（每股）</label>
+        <input type="number" id="a-price" class="field-input" step="0.01" min="0" placeholder="每股實際成交價">
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-danger" id="assign-clear-btn" style="margin-right:auto">清除記錄</button>
+        <button type="button" class="btn btn-ghost" id="assign-cancel-btn">取消</button>
+        <button type="submit" class="btn btn-primary">✓ 儲存</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ══ 設定 Modal ══════════════════════════════════════════════════════════ -->
+<div id="settings-modal" class="modal-overlay hidden" role="dialog" aria-modal="true">
+  <div class="modal-box modal-box-sm">
+    <div class="modal-header">
+      <h2>⚙ 設定</h2>
+      <button class="modal-close" id="settings-close">✕</button>
+    </div>
+
+    <div class="settings-section">
+      <div class="settings-section-title">外觀主題</div>
+      <div class="theme-options">
+        <button class="theme-option" data-theme="dark">
+          <span class="theme-icon">🌙</span>
+          <span class="theme-label">深色</span>
+        </button>
+        <button class="theme-option" data-theme="light">
+          <span class="theme-icon">☀️</span>
+          <span class="theme-label">淺色</span>
+        </button>
+        <button class="theme-option" data-theme="system">
+          <span class="theme-icon">🖥️</span>
+          <span class="theme-label">跟隨系統</span>
+        </button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script type="module" src="js/app.js"></script>
+<script type="module" src="js/devTools.js"></script>
+</body>
+</html>
