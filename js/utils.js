@@ -172,11 +172,10 @@ export function calcPerPeriodCoupon(c) {
   return c.principal * annualRate / periodsPerYear;
 }
 
-/** 計算本金已累積配息（只計算已過的觀察日，不含未來期數） */
+/** 計算配息總額（已過觀察日的完整期數 + 提前 KO 的零頭天數利息） */
 export function calcAccruedCoupon(c) {
   if (!c.principal || !c.couponPercent || !c.settlementMonths || !c.startDate) return null;
   const today = localDateStr(new Date());
-  // 截止點：合約實際結束日 vs 今天，取較早的
   const effectiveEnd = getEffectiveEndDate(c);
   const cutoff = effectiveEnd && effectiveEnd < today ? effectiveEnd : today;
   const { observationDates } = calcSchedule(c);
@@ -187,9 +186,23 @@ export function calcAccruedCoupon(c) {
     else break;
   }
 
-  if (count === 0) return 0;
   const perPeriod = calcPerPeriodCoupon(c);
-  return perPeriod * count;
+  let total = perPeriod * count;
+
+  // 提前 KO：加計上次觀察日到 KO 日的零頭天數利息
+  const naturalEnd = contractEndIso(c);
+  const isEarlyKO = c.redeemedDate && naturalEnd && c.redeemedDate < naturalEnd;
+  if (isEarlyKO) {
+    const prevObs = [...observationDates].filter(d => d <= c.redeemedDate).pop();
+    if (prevObs && prevObs !== c.redeemedDate) {
+      const days = Math.round(
+        (new Date(c.redeemedDate + 'T00:00:00') - new Date(prevObs + 'T00:00:00')) / 86400000
+      );
+      total += Math.round(c.principal * (c.couponPercent / 100) * days / 365 * 100) / 100;
+    }
+  }
+
+  return total || 0;
 }
 
 export { MKT_BADGE, SETTLE_LABELS };

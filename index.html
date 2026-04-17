@@ -120,8 +120,9 @@
 
         <div class="field-row-3">
           <div class="field">
-            <label class="field-label" for="f-start">開始日期</label>
+            <label class="field-label" for="f-start">比價開始日期</label>
             <input type="date" id="f-start" class="field-input" required>
+            <div class="field-desc">即合約開始進行 KO 比價的日期，請依合約內容填寫，如有疑問請洽詢您的營業員。</div>
           </div>
           <div class="field">
             <label class="field-label" for="f-duration">合約時長（月）</label>
@@ -235,6 +236,7 @@
         <div id="underlyings-container"></div>
       </div>
 
+      <div id="form-error" class="form-error hidden"></div>
       <div class="modal-actions">
         <button type="button" class="btn btn-ghost" id="cancel-btn">取消</button>
         <button type="submit" class="btn btn-primary" id="submit-btn">✓ 儲存合約</button>

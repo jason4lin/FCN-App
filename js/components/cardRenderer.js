@@ -133,7 +133,7 @@ export function buildContractCard(c) {
     const accrued   = calcAccruedCoupon(c);
     chips.push(`<span class="card-meta-chip">💰 本金 ${fmtMoney(c.principal, cur)}`
       + (perPeriod ? `・${periodLbl}配息 ${fmtMoney(perPeriod, cur)}` : '')
-      + (accrued   ? `・已發配息 ${fmtMoney(accrued, cur)}` : '')
+      + (accrued   ? `・配息總額 ${fmtMoney(accrued, cur)}` : '')
       + `</span>`);
   }
 

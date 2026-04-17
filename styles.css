@@ -608,6 +608,17 @@ body {
   line-height: 1.6;
   margin-bottom: .75rem;
 }
+.form-error {
+  margin: 0 0 .75rem;
+  padding: .6rem .9rem;
+  border-radius: var(--radius-sm);
+  background: rgba(239,68,68,.12);
+  border: 1px solid rgba(239,68,68,.35);
+  color: #fca5a5;
+  font-size: .85rem;
+  font-weight: 500;
+}
+
 .settings-report-url {
   font-size: .8rem;
   color: var(--blue-2);

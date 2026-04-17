@@ -23,7 +23,7 @@ export function openAddModal() {
   $('f-name').value      = '';
   $('f-start').value     = localDateStr(new Date());
   $('f-duration').value  = 12;
-  $('f-noop').value      = 0;
+  $('f-noop').value      = 1;
   $('f-ko-pct').value    = 100;
   $('f-strike-pct').value= 80;
   $('f-ki-pct').value    = 80;
@@ -244,8 +244,19 @@ export function openEditModal(id) {
   showModal('modal');
 }
 
+function showFormError(msg) {
+  const el = $('form-error');
+  if (!el) return;
+  el.textContent = msg;
+  el.classList.remove('hidden');
+  el.scrollIntoView({ block: 'nearest' });
+  clearTimeout(el._timer);
+  el._timer = setTimeout(() => el.classList.add('hidden'), 6000);
+}
+
 export async function onContractFormSubmit(e) {
   e.preventDefault();
+  $('form-error')?.classList.add('hidden');
   const arr = [];
   const mkt = state.contractMarket;
   for (let i = 0; i < state.underlyingCount; i++) {
@@ -253,7 +264,7 @@ export async function onContractFormSubmit(e) {
     if (!raw) continue;
     const baseP = parseFloat($(`u${i}-base`).value);
     if (isNaN(baseP) || baseP <= 0) {
-      alert(`請確認「標的 ${i+1}」輸入了有效的基準價`);
+      showFormError(`請確認「標的 ${i+1}」輸入了有效的基準價`);
       return;
     }
     arr.push({
@@ -264,7 +275,7 @@ export async function onContractFormSubmit(e) {
     });
   }
 
-  if (arr.length === 0) { alert('至少需輸入一檔有效標的與基準價。'); return; }
+  if (arr.length === 0) { showFormError('至少需輸入一檔有效標的與基準價。'); return; }
 
   const newC = {
     id:              state.editingId || uid(),

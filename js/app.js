@@ -80,6 +80,9 @@ window.addEventListener('DOMContentLoaded', async () => {
   });
 
   // Form submissions
+  document.getElementById('contract-form').addEventListener('keydown', e => {
+    if (e.key === 'Enter' && e.target.tagName !== 'BUTTON') e.preventDefault();
+  });
   document.getElementById('contract-form').addEventListener('submit', onContractFormSubmit);
   document.getElementById('assign-form').addEventListener('submit', onAssignFormSubmit);
 
@@ -88,8 +91,8 @@ window.addEventListener('DOMContentLoaded', async () => {
     '#cancel-btn, #assign-cancel-btn, #delete-cancel, #modal-close, #assign-modal-close'
   ).forEach(btn => btn?.addEventListener('click', hideAllModals));
 
-  // Close on backdrop click
-  document.querySelectorAll('.modal-overlay').forEach(overlay => {
+  // Close on backdrop click（合約輸入視窗除外，避免誤觸遺失資料）
+  document.querySelectorAll('.modal-overlay:not(#modal)').forEach(overlay => {
     overlay.addEventListener('click', e => {
       if (e.target === overlay) hideAllModals();
     });
