@@ -58,28 +58,52 @@ function createWindow() {
 let _updateState = 'idle';
 let _mainWin = null;
 
+function writeUpdateLog(msg) {
+  try {
+    const logsDir = path.join(app.getPath('userData'), 'logs');
+    if (!fs.existsSync(logsDir)) fs.mkdirSync(logsDir, { recursive: true });
+    const line = `[${new Date().toISOString()}] ${msg}\n`;
+    fs.appendFileSync(path.join(logsDir, 'updater.log'), line, 'utf8');
+  } catch {}
+}
+
 function initAutoUpdater(win) {
   _mainWin = win;
   autoUpdater.autoDownload = true;
   autoUpdater.autoInstallOnAppQuit = true;
 
-  autoUpdater.on('checking-for-update', () => { _updateState = 'checking'; });
+  autoUpdater.on('checking-for-update', () => {
+    _updateState = 'checking';
+    writeUpdateLog('checking-for-update');
+  });
 
   autoUpdater.on('update-available', (info) => {
     _updateState = 'downloading';
+    writeUpdateLog(`update-available: ${info.version}`);
     win.webContents.send('update-available', info.version);
   });
 
-  autoUpdater.on('update-not-available', () => { _updateState = 'idle'; });
+  autoUpdater.on('update-not-available', () => {
+    _updateState = 'idle';
+    writeUpdateLog('update-not-available');
+  });
+
+  autoUpdater.on('download-progress', (p) => {
+    writeUpdateLog(`download-progress: ${Math.round(p.percent)}%`);
+  });
 
   autoUpdater.on('update-downloaded', () => {
     _updateState = 'ready';
+    writeUpdateLog('update-downloaded');
     win.webContents.send('update-downloaded');
   });
 
-  autoUpdater.on('error', () => { _updateState = 'idle'; });
+  autoUpdater.on('error', (err) => {
+    _updateState = 'idle';
+    writeUpdateLog(`error: ${err.message}`);
+  });
 
-  autoUpdater.checkForUpdatesAndNotify().catch(() => {});
+  autoUpdater.checkForUpdatesAndNotify().catch((err) => writeUpdateLog(`checkForUpdatesAndNotify error: ${err.message}`));
 }
 
 // ─── IPC：版本資訊 & 手動檢查更新 ─────────────────────────────────────────────
