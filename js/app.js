@@ -210,6 +210,14 @@ window.addEventListener('DOMContentLoaded', async () => {
     container.insertAdjacentElement('afterend', btn);
   }
 
+  window.api.onDownloadProgress?.((pct) => {
+    const status = document.getElementById('update-status');
+    if (status) {
+      status.textContent = `⬇ 下載中… ${pct}%`;
+      status.classList.remove('hidden');
+    }
+  });
+
   window.api.onUpdateDownloaded?.(() => {
     const status = document.getElementById('update-status');
     if (!status) return;

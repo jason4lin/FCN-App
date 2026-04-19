@@ -16,6 +16,7 @@ contextBridge.exposeInMainWorld('api', {
   checkForUpdate:     ()       => ipcRenderer.invoke('check-for-update'),
   quitAndInstall:     ()       => ipcRenderer.invoke('quit-and-install'),
   onUpdateDownloaded: (fn)     => ipcRenderer.on('update-downloaded', fn),
+  onDownloadProgress: (fn)     => ipcRenderer.on('download-progress', (_e, pct) => fn(pct)),
   openExternal:    (url)        => ipcRenderer.invoke('open-external',      url),
   exportDiagnostic:(data)       => ipcRenderer.invoke('export-diagnostic',  data),
 });

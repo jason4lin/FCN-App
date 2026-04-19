@@ -89,7 +89,9 @@ function initAutoUpdater(win) {
   });
 
   autoUpdater.on('download-progress', (p) => {
-    writeUpdateLog(`download-progress: ${Math.round(p.percent)}%`);
+    const pct = Math.round(p.percent);
+    writeUpdateLog(`download-progress: ${pct}%`);
+    win.webContents.send('download-progress', pct);
   });
 
   autoUpdater.on('update-downloaded', () => {
