@@ -20,6 +20,7 @@
       "!.github/**",
       "!*.md"
     ],
+    "artifactName": "FCN-Tracker-Setup-${version}.${ext}",
     "win": {
       "target": [
         {
