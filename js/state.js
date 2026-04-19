@@ -12,7 +12,7 @@ export const state = {
   autoProcessedNotices: {},
 
   // 設定
-  settings: { memoryKO: true },
+  settings: { memoryKO: true, autoStartDate: false },
 
   // 記憶式 KO 快取：{ [contractId]: { [symbol]: '首次達標日 YYYY-MM-DD' } }
   koMemory: {},

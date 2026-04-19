@@ -13,6 +13,7 @@ import {
   openAddModal, openEditModal, openAssignmentModal,
   setSettleMonths, setContractMarket, setUnderlyingCount,
   onContractFormSubmit, onAssignFormSubmit, clearAssignment,
+  applyAutoStart,
 } from './ui/modals.js';
 
 // ── Expose to Window for HTML inline onclick ──────────────────────────────
@@ -228,6 +229,16 @@ window.addEventListener('DOMContentLoaded', async () => {
     if (!e.target.checked) state.koMemory = {};
     await window.api.saveSettings(state.settings);
   });
+
+  // 自動計算比價開始日設定 toggle
+  document.getElementById('auto-start-toggle')?.addEventListener('change', async (e) => {
+    state.settings.autoStartDate = e.target.checked;
+    await window.api.saveSettings(state.settings);
+  });
+
+  // 合約日期 / checkbox 變更時重新計算
+  document.getElementById('f-contract-date')?.addEventListener('change', applyAutoStart);
+  document.getElementById('f-auto-start')?.addEventListener('change', applyAutoStart);
 
   // 問題回報
   async function submitReport() {

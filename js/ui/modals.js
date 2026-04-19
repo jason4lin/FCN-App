@@ -1,7 +1,7 @@
 import { state } from '../state.js';
 import {
   $, $$, uid, localDateStr, parseFloatOrNull, formatSymbol,
-  stripSuffix, fmt, escHtml
+  stripSuffix, fmt, escHtml, addBusinessDays
 } from '../utils.js';
 import { renderDashboard } from './dashboard.js';
 import { saveContracts } from '../api.js';
@@ -15,13 +15,27 @@ export function hideAllModals() {
   $$('.modal-overlay').forEach(el => el.classList.add('hidden'));
 }
 
+// ── Auto-start helper ─────────────────────────────────────────
+export function applyAutoStart() {
+  const contractDate = $('f-contract-date')?.value;
+  const checkbox     = $('f-auto-start');
+  const startInput   = $('f-start');
+  if (!checkbox || !startInput) return;
+
+  if (checkbox.checked && contractDate) {
+    startInput.value    = addBusinessDays(contractDate, 5);
+    startInput.readOnly = true;
+  } else {
+    startInput.readOnly = false;
+  }
+}
+
 // ── Modals: 添加 / 編輯合約 ────────────────────────────────────
 export function openAddModal() {
   state.editingId = null;
   $('modal-title').textContent = '新建 FCN 合約';
   $('submit-btn').textContent  = '✓ 建立合約';
   $('f-name').value      = '';
-  $('f-start').value     = localDateStr(new Date());
   $('f-duration').value  = 12;
   $('f-noop').value      = 1;
   $('f-ko-pct').value    = 100;
@@ -32,6 +46,12 @@ export function openAddModal() {
   setSettleMonths(1);
   setContractMarket('US');
   setUnderlyingCount(2, true);
+
+  const today = localDateStr(new Date());
+  $('f-contract-date').value = today;
+  $('f-auto-start').checked  = !!state.settings?.autoStartDate;
+  applyAutoStart();
+
   showModal('modal');
 }
 
@@ -241,6 +261,11 @@ export function openEditModal(id) {
   setSettleMonths(c.settlementMonths || 1);
   setContractMarket(c.market || 'US');
   setUnderlyingCount(c.underlyings?.length || 2, false, c.underlyings);
+
+  if ($('f-contract-date')) $('f-contract-date').value = '';
+  if ($('f-auto-start'))    $('f-auto-start').checked  = false;
+  $('f-start').readOnly = false;
+
   showModal('modal');
 }
 

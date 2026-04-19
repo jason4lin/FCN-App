@@ -42,6 +42,17 @@ export function parseFloatOrNull(v) {
   return (!isNaN(n) && n > 0) ? n : null;
 }
 
+export function addBusinessDays(dateStr, days) {
+  const d = new Date(dateStr + 'T00:00:00');
+  let count = 0;
+  while (count < days) {
+    d.setDate(d.getDate() + 1);
+    const dow = d.getDay();
+    if (dow !== 0 && dow !== 6) count++;
+  }
+  return localDateStr(d);
+}
+
 export function daysUntil(isoDate) {
   const today = new Date(); today.setHours(0,0,0,0);
   return Math.round((new Date(isoDate + 'T00:00:00') - today) / 86400000);

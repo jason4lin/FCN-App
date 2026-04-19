@@ -121,6 +121,14 @@
         <div class="field-row-3">
           <div class="field">
             <label class="field-label" for="f-start">比價開始日期</label>
+            <div id="auto-start-helper">
+              <div class="field-desc" style="margin-bottom:.4rem">簽約日（T）</div>
+              <input type="date" id="f-contract-date" class="field-input" style="margin-bottom:.4rem">
+              <label class="auto-start-check-row">
+                <input type="checkbox" id="f-auto-start">
+                <span>自動 +5 工作日帶入比價開始日</span>
+              </label>
+            </div>
             <input type="date" id="f-start" class="field-input" required>
             <div class="field-desc">即合約開始進行 KO 比價的日期，請依合約內容填寫，如有疑問請洽詢您的營業員。</div>
           </div>
@@ -342,6 +350,13 @@
         <div class="settings-toggle-info">
           <span class="settings-toggle-label">記憶式 FCN</span>
           <span class="settings-toggle-desc">各標的獨立記憶，全部達標後才提前終止（需 Update All 重新計算）</span>
+        </div>
+      </label>
+      <label class="settings-toggle-row" style="margin-top:.75rem">
+        <input type="checkbox" id="auto-start-toggle" class="settings-checkbox">
+        <div class="settings-toggle-info">
+          <span class="settings-toggle-label">自動計算比價開始日</span>
+          <span class="settings-toggle-desc">新增合約時，輸入簽約日後自動 +5 工作日帶入比價開始日期（可於表單內取消勾選覆蓋）</span>
         </div>
       </label>
     </div>

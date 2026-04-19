@@ -354,7 +354,10 @@ body {
 .field-desc { margin-top: .4rem; font-size: .8rem; color: var(--text-muted); line-height: 1.5; }
 .field-input { width: 100%; background: var(--surface-2); border: 1px solid var(--border); color: var(--text-primary); border-radius: var(--radius-sm); padding: .7rem .9rem; font-size: .95rem; font-family: inherit; transition: var(--transition); -webkit-appearance: none; }
 .field-input:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px rgba(59,130,246,.18); }
+.field-input[readonly] { opacity: .55; cursor: default; }
 .field-input::placeholder { color: var(--text-muted); }
+.auto-start-check-row { display: flex; align-items: center; gap: .4rem; font-size: .82rem; color: var(--text-muted); margin-bottom: .4rem; cursor: pointer; user-select: none; }
+.auto-start-check-row input[type="checkbox"] { accent-color: var(--blue); cursor: pointer; }
 .field-row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-bottom: 1rem; }
 .text-muted { color: var(--text-muted); }
 .text-secondary { color: var(--text-secondary); }

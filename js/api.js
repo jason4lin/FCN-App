@@ -193,6 +193,8 @@ export async function loadSettings() {
   Object.assign(state.settings, saved);
   const checkbox = document.getElementById('memory-ko-toggle');
   if (checkbox) checkbox.checked = !!state.settings.memoryKO;
+  const autoStartToggle = document.getElementById('auto-start-toggle');
+  if (autoStartToggle) autoStartToggle.checked = !!state.settings.autoStartDate;
 }
 
 /** 記憶式 KO：各標的獨立記憶，全部達標後才終止 */
