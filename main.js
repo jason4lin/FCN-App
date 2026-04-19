@@ -54,27 +54,32 @@ function createWindow() {
 }
 
 // ─── 自動更新 ─────────────────────────────────────────────────────────────────
+// 'idle' | 'checking' | 'downloading' | 'ready'
+let _updateState = 'idle';
+let _mainWin = null;
+
 function initAutoUpdater(win) {
+  _mainWin = win;
   autoUpdater.autoDownload = true;
   autoUpdater.autoInstallOnAppQuit = true;
 
+  autoUpdater.on('checking-for-update', () => { _updateState = 'checking'; });
+
   autoUpdater.on('update-available', (info) => {
+    _updateState = 'downloading';
     win.webContents.send('update-available', info.version);
   });
 
+  autoUpdater.on('update-not-available', () => { _updateState = 'idle'; });
+
   autoUpdater.on('update-downloaded', () => {
-    dialog.showMessageBox(win, {
-      type: 'info',
-      title: '更新就緒',
-      message: `新版本已下載完畢，重新啟動後將自動安裝。`,
-      buttons: ['立即重啟', '稍後再說'],
-      defaultId: 0,
-    }).then(({ response }) => {
-      if (response === 0) autoUpdater.quitAndInstall();
-    });
+    _updateState = 'ready';
+    win.webContents.send('update-downloaded');
   });
 
-  autoUpdater.checkForUpdatesAndNotify().catch(() => {}); // 離線時靜默失敗
+  autoUpdater.on('error', () => { _updateState = 'idle'; });
+
+  autoUpdater.checkForUpdatesAndNotify().catch(() => {});
 }
 
 // ─── IPC：版本資訊 & 手動檢查更新 ─────────────────────────────────────────────
@@ -82,15 +87,28 @@ ipcMain.handle('get-app-version', () => app.getVersion());
 
 ipcMain.handle('check-for-update', () => {
   if (!app.isPackaged) return Promise.resolve({ status: 'dev' });
+  if (_updateState === 'ready')       return Promise.resolve({ status: 'ready' });
+  if (_updateState === 'downloading') return Promise.resolve({ status: 'downloading' });
+
   return new Promise((resolve) => {
-    const done = (result) => { clearTimeout(timer); resolve(result); };
+    const done = (result) => { clearTimeout(timer); cleanup(); resolve(result); };
     const timer = setTimeout(() => done({ status: 'error', message: '連線逾時' }), 15000);
-    autoUpdater.once('update-available',     (info) => done({ status: 'available', version: info.version }));
-    autoUpdater.once('update-not-available', ()     => done({ status: 'latest' }));
-    autoUpdater.once('error',                (err)  => done({ status: 'error', message: err.message }));
-    autoUpdater.checkForUpdates().catch(err  =>       done({ status: 'error', message: err.message }));
+    const onAvailable    = (info) => done({ status: 'available', version: info.version });
+    const onNotAvailable = ()     => done({ status: 'latest' });
+    const onError        = (err)  => done({ status: 'error', message: err.message });
+    const cleanup = () => {
+      autoUpdater.removeListener('update-available',     onAvailable);
+      autoUpdater.removeListener('update-not-available', onNotAvailable);
+      autoUpdater.removeListener('error',                onError);
+    };
+    autoUpdater.once('update-available',     onAvailable);
+    autoUpdater.once('update-not-available', onNotAvailable);
+    autoUpdater.once('error',                onError);
+    autoUpdater.checkForUpdates().catch(err => done({ status: 'error', message: err.message }));
   });
 });
+
+ipcMain.handle('quit-and-install', () => autoUpdater.quitAndInstall());
 
 // ─── App 生命週期 ─────────────────────────────────────────────────────────────
 app.whenReady().then(() => {

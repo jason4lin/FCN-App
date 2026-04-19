@@ -199,6 +199,27 @@ window.addEventListener('DOMContentLoaded', async () => {
     if (el) el.textContent = v;
   });
 
+  // 下載完成推播（背景自動下載完成時更新 UI）
+  function showRestartButton(container) {
+    if (container.querySelector('.restart-btn')) return;
+    const btn = document.createElement('button');
+    btn.className = 'btn btn-primary btn-sm restart-btn';
+    btn.style.marginTop = '.5rem';
+    btn.textContent = '↺ 立即重啟安裝';
+    btn.addEventListener('click', () => window.api.quitAndInstall());
+    container.insertAdjacentElement('afterend', btn);
+  }
+
+  window.api.onUpdateDownloaded?.(() => {
+    const status = document.getElementById('update-status');
+    if (!status) return;
+    status.textContent = '✓ 新版本已就緒';
+    status.className = 'settings-update-status status-ok';
+    status.classList.remove('hidden');
+    showRestartButton(status);
+    document.getElementById('pending-update')?.classList.remove('hidden');
+  });
+
   // 手動檢查更新
   document.getElementById('check-update-btn')?.addEventListener('click', async () => {
     const btn    = document.getElementById('check-update-btn');
@@ -213,14 +234,17 @@ window.addEventListener('DOMContentLoaded', async () => {
     btn.textContent = '🔍 檢查更新';
 
     const map = {
-      dev:       ['開發模式，無法檢查更新',              'status-muted'],
-      latest:    ['✓ 目前已是最新版本',                  'status-ok'],
-      available: [`🔔 發現新版本 v${result.version}，下載中…`, 'status-update'],
-      error:     [`⚠ 檢查失敗：${result.message || '網路錯誤'}`, 'status-warn'],
+      dev:         ['開發模式，無法檢查更新',                    'status-muted'],
+      latest:      ['✓ 目前已是最新版本',                        'status-ok'],
+      available:   [`🔔 發現新版本 v${result.version}，下載中…`, 'status-update'],
+      downloading: ['⬇ 新版本下載中，請稍候…',                   'status-update'],
+      ready:       ['✓ 新版本已就緒',                            'status-ok'],
+      error:       [`⚠ 檢查失敗：${result.message || '網路錯誤'}`, 'status-warn'],
     };
     const [text, cls] = map[result.status] || map.error;
     status.textContent = text;
     status.className = `settings-update-status ${cls}`;
+    if (result.status === 'ready') showRestartButton(status);
   });
 
   // Memory KO 設定 checkbox

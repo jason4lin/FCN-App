@@ -13,7 +13,9 @@ contextBridge.exposeInMainWorld('api', {
   saveSettings:    (settings)   => ipcRenderer.invoke('save-settings',     settings),
   fetchPriceRange: (payload)    => ipcRenderer.invoke('fetch-price-range', payload),
   getAppVersion:   ()           => ipcRenderer.invoke('get-app-version'),
-  checkForUpdate:  ()           => ipcRenderer.invoke('check-for-update'),
+  checkForUpdate:     ()       => ipcRenderer.invoke('check-for-update'),
+  quitAndInstall:     ()       => ipcRenderer.invoke('quit-and-install'),
+  onUpdateDownloaded: (fn)     => ipcRenderer.on('update-downloaded', fn),
   openExternal:    (url)        => ipcRenderer.invoke('open-external',      url),
   exportDiagnostic:(data)       => ipcRenderer.invoke('export-diagnostic',  data),
 });
