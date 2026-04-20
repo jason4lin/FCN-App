@@ -18,7 +18,7 @@ export function applyTheme(mode) {
   localStorage.setItem(STORAGE_KEY, mode);
 
   // 同步 settings panel 的按鈕 active 狀態
-  document.querySelectorAll('.theme-option').forEach(btn => {
+  document.querySelectorAll('.theme-option[data-theme]').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.theme === mode);
   });
 }
@@ -37,4 +37,19 @@ export function initTheme() {
 
 export function getThemeMode() {
   return localStorage.getItem(STORAGE_KEY) || 'dark';
+}
+
+// ── Font size ────────────────────────────────────────────────────────────────
+const FONT_KEY = 'fcn-font-size';
+
+export function applyFontSize(size) {
+  document.documentElement.dataset.fontsize = size;
+  localStorage.setItem(FONT_KEY, size);
+  document.querySelectorAll('.fontsize-option').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.fontsize === size);
+  });
+}
+
+export function initFontSize() {
+  applyFontSize(localStorage.getItem(FONT_KEY) || 'normal');
 }

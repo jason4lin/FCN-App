@@ -2,11 +2,12 @@ import { state } from './state.js';
 import { loadContracts, saveContracts, refreshAll, loadSettings } from './api.js';
 import { renderDashboard } from './ui/dashboard.js';
 import { localDateStr, contractsToCSV, csvToContracts } from './utils.js';
-import { initTheme, applyTheme } from './theme.js';
+import { initTheme, applyTheme, initFontSize, applyFontSize } from './theme.js';
 import { initErrorLogger } from './errorLogger.js';
 
-// 主題在 DOM 載入前就要設定，避免閃白
+// 主題與字體大小在 DOM 載入前設定，避免閃白
 initTheme();
+initFontSize();
 initErrorLogger();
 import {
   hideAllModals, showModal,
@@ -28,6 +29,7 @@ window.app = {
   setUnderlyingCount,
   clearAssignment,
   applyTheme,
+  applyFontSize,
 };
 
 // ── Dismiss auto-process notice ───────────────────────────────────────────
@@ -177,6 +179,9 @@ window.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('settings-close').addEventListener('click', hideAllModals);
   document.querySelectorAll('.theme-option').forEach(btn => {
     btn.addEventListener('click', () => applyTheme(btn.dataset.theme));
+  });
+  document.querySelectorAll('.fontsize-option').forEach(btn => {
+    btn.addEventListener('click', () => applyFontSize(btn.dataset.fontsize));
   });
 
   // Sort buttons（同一按鈕再按切換升降序，換按鈕則重設方向）

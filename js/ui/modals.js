@@ -192,7 +192,8 @@ async function fetchQuoteForBlock(i) {
   try {
     // 取得最新報價與基本資訊（名稱、幣別）
     const res = await window.api.fetchQuote(symbol);
-    const stDate = $('f-start').value;
+    const contractDate = $('f-contract-date')?.value;
+    const stDate = contractDate || $('f-start').value;
     const isToday = stDate === localDateStr(new Date());
 
     if (res.ok) {

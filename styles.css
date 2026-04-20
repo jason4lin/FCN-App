@@ -297,8 +297,8 @@ body {
 .modal-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 2rem; width: 100%; box-shadow: var(--shadow-lg); animation: slideUp .2s ease; max-height: 90vh; overflow-y: auto; }
 .modal-box::-webkit-scrollbar { width: 5px; }
 .modal-box::-webkit-scrollbar-thumb { background: var(--surface-3); border-radius: 99px; }
-.modal-lg { max-width: 680px; }
-.modal-box-sm { max-width: 380px; }
+.modal-lg { max-width: 90vw; }
+.modal-box-sm { max-width: 72vw; }
 @keyframes slideUp { from { transform: translateY(10px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
 .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
 .modal-header h2 { font-size: 1.4rem; font-weight: 800; }
@@ -310,7 +310,7 @@ body {
 .btn-icon { font-size: 1.1rem; padding: .6rem .8rem; }
 .settings-section { margin-bottom: 1.5rem; }
 .settings-section:last-child { margin-bottom: 0; }
-.settings-section-title { font-size: .75rem; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--text-muted); margin-bottom: .85rem; }
+.settings-section-title { font-size: .95rem; font-weight: 700; color: var(--text-primary); margin-bottom: .85rem; padding-bottom: .45rem; border-bottom: 1px solid var(--border); }
 .theme-options { display: grid; grid-template-columns: repeat(3, 1fr); gap: .6rem; }
 .theme-option {
   display: flex; flex-direction: column; align-items: center; gap: .4rem;
@@ -628,3 +628,7 @@ body {
   word-break: break-all;
   user-select: all;
 }
+
+/* ── Font size scaling ─────────────────────────────── */
+html[data-fontsize="large"]  { font-size: 17px; }
+html[data-fontsize="xlarge"] { font-size: 19px; }
